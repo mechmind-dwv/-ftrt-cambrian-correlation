@@ -19,7 +19,7 @@ This project architects a radical framework connecting celestial mechanics to th
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/ftrt-cambrian-correlation.git
+git clone https://github.com/mechmind-dwv/ftrt-cambrian-correlation.git
 cd ftrt-cambrian-correlation
 ```
 Build and run the application:
@@ -117,4 +117,4 @@ From "evolution by natural selection alone" to "cosmic-biological co-evolution"
 
 🌟 Profound Implications
 Domain           Impact
-Evolutionary Biology	
+Evolutionary Biology
