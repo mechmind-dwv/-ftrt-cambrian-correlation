@@ -1,25 +1,30 @@
-# backend/app/api/correlations.py
-from flask import Blueprint, jsonify, request
-from datetime import datetime
+from flask import jsonify, request
+from app.api import api_bp
 from app.core.cosmic_evolution_correlator import CosmicEvolutionCorrelator
+from datetime import datetime
 import logging
 
 logger = logging.getLogger(__name__)
 
-correlations_bp = Blueprint('correlations', __name__)
+# Initialize the correlator
 correlator = CosmicEvolutionCorrelator()
 
-@correlations_bp.route('/api/correlations', methods=['GET'])
+@api_bp.route('/correlations', methods=['GET'])
 def get_correlations():
     """
-    Endpoint para obtener correlaciones entre eventos cósmicos y evolutivos
+    Endpoint to get correlations between cosmic and evolutionary events
+    Query parameters:
+    - start_date: Start date in ISO format (YYYY-MM-DD)
+    - end_date: End date in ISO format (YYYY-MM-DD)
+    - max_lag_days: Maximum time lag in days to consider (default: 365)
     """
     try:
-        # Obtener parámetros de la solicitud
+        # Get query parameters
         start_date_str = request.args.get('start_date')
         end_date_str = request.args.get('end_date')
+        max_lag_days = int(request.args.get('max_lag_days', 365))
         
-        # Valores predeterminados si no se proporcionan
+        # Set default dates if not provided
         if not start_date_str:
             start_date = datetime(2000, 1, 1)
         else:
@@ -30,8 +35,8 @@ def get_correlations():
         else:
             end_date = datetime.fromisoformat(end_date_str)
         
-        # Realizar análisis de correlación
-        results = correlator.correlate_events(start_date, end_date)
+        # Perform correlation analysis
+        results = correlator.correlate_events(start_date, end_date, max_lag_days)
         
         return jsonify({
             'success': True,
@@ -47,18 +52,18 @@ def get_correlations():
             'message': "Failed to complete correlation analysis"
         }), 500
 
-@correlations_bp.route('/api/cosmic-events', methods=['GET'])
-def get_cosmic_events():
+@api_bp.route('/correlations/summary', methods=['GET'])
+def get_correlation_summary():
     """
-    Endpoint para obtener eventos cósmicos
+    Endpoint to get a summary of correlation results
     """
     try:
-        # Obtener parámetros de la solicitud
+        # Get query parameters
         start_date_str = request.args.get('start_date')
         end_date_str = request.args.get('end_date')
-        event_type = request.args.get('type')
+        max_lag_days = int(request.args.get('max_lag_days', 365))
         
-        # Valores predeterminados si no se proporcionan
+        # Set default dates if not provided
         if not start_date_str:
             start_date = datetime(2000, 1, 1)
         else:
@@ -69,55 +74,50 @@ def get_cosmic_events():
         else:
             end_date = datetime.fromisoformat(end_date_str)
         
-        # Obtener eventos cósmicos
-        if event_type == 'ftrt':
-            events = correlator.ftrt_calculator.find_peaks(start_date, end_date)
-        elif event_type == 'geomagnetic':
-            events = correlator.paleomag_database.get_field_weaknesses(start_date, end_date)
-        else:
-            # Obtener todos los eventos
-            ftrt_peaks = correlator.ftrt_calculator.find_peaks(start_date, end_date)
-            geomag_minima = correlator.paleomag_database.get_field_weaknesses(start_date, end_date)
-            events = ftrt_peaks + geomag_minima
+        # Perform correlation analysis
+        results = correlator.correlate_events(start_date, end_date, max_lag_days)
         
-        # Formatear resultados
-        formatted_events = [
-            {
-                'timestamp': event.timestamp.isoformat(),
-                'type': event.event_type,
-                'magnitude': event.magnitude,
-                'duration_days': event.duration.days,
-                'description': event.description
-            }
-            for event in events
-        ]
+        # Extract summary information
+        summary = {
+            'period': {
+                'start_date': start_date.isoformat(),
+                'end_date': end_date.isoformat()
+            },
+            'cosmic_events_count': len(results['cosmic_events']),
+            'evolutionary_events_count': len(results['evolutionary_events']),
+            'best_correlation': results['best_correlation'],
+            'significant_correlations': len([r for r in results['correlation_results'] if r['significant']]),
+            'cosmic_clusters': len(results['cosmic_clusters']),
+            'evolutionary_clusters': len(results['evolutionary_clusters'])
+        }
         
         return jsonify({
             'success': True,
-            'data': formatted_events,
-            'message': f"Retrieved {len(formatted_events)} cosmic events"
+            'data': summary,
+            'message': "Correlation summary generated successfully"
         })
     
     except Exception as e:
-        logger.error(f"Error retrieving cosmic events: {str(e)}")
+        logger.error(f"Error generating correlation summary: {str(e)}")
         return jsonify({
             'success': False,
             'error': str(e),
-            'message': "Failed to retrieve cosmic events"
+            'message': "Failed to generate correlation summary"
         }), 500
 
-@correlations_bp.route('/api/evolutionary-events', methods=['GET'])
-def get_evolutionary_events():
+@api_bp.route('/correlations/statistical-significance', methods=['GET'])
+def get_statistical_significance():
     """
-    Endpoint para obtener eventos evolutivos
+    Endpoint to get statistical significance of correlations
     """
     try:
-        # Obtener parámetros de la solicitud
+        # Get query parameters
         start_date_str = request.args.get('start_date')
         end_date_str = request.args.get('end_date')
-        event_type = request.args.get('type')
+        max_lag_days = int(request.args.get('max_lag_days', 365))
+        significance_threshold = float(request.args.get('significance_threshold', 0.05))
         
-        # Valores predeterminados si no se proporcionan
+        # Set default dates if not provided
         if not start_date_str:
             start_date = datetime(2000, 1, 1)
         else:
@@ -128,35 +128,36 @@ def get_evolutionary_events():
         else:
             end_date = datetime.fromisoformat(end_date_str)
         
-        # Obtener eventos evolutivos
-        events = correlator.fossil_parser.identify_radiations(start_date, end_date)
+        # Perform correlation analysis
+        results = correlator.correlate_events(start_date, end_date, max_lag_days)
         
-        # Filtrar por tipo si se especifica
-        if event_type:
-            events = [event for event in events if event.event_type == event_type]
-        
-        # Formatear resultados
-        formatted_events = [
-            {
-                'timestamp': event.timestamp.isoformat(),
-                'type': event.event_type,
-                'magnitude': event.magnitude,
-                'affected_taxa': event.affected_taxa,
-                'description': event.description
-            }
-            for event in events
+        # Filter for significant correlations
+        significant_correlations = [
+            r for r in results['correlation_results'] 
+            if r['p_value'] < significance_threshold
         ]
+        
+        # Sort by absolute correlation coefficient
+        significant_correlations.sort(
+            key=lambda x: abs(x['correlation_coefficient']), 
+            reverse=True
+        )
         
         return jsonify({
             'success': True,
-            'data': formatted_events,
-            'message': f"Retrieved {len(formatted_events)} evolutionary events"
+            'data': {
+                'total_correlations': len(results['correlation_results']),
+                'significant_correlations': len(significant_correlations),
+                'significance_threshold': significance_threshold,
+                'correlations': significant_correlations
+            },
+            'message': f"Found {len(significant_correlations)} statistically significant correlations"
         })
     
     except Exception as e:
-        logger.error(f"Error retrieving evolutionary events: {str(e)}")
+        logger.error(f"Error analyzing statistical significance: {str(e)}")
         return jsonify({
             'success': False,
             'error': str(e),
-            'message': "Failed to retrieve evolutionary events"
+            'message': "Failed to analyze statistical significance"
         }), 500
