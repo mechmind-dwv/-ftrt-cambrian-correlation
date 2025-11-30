@@ -1,0 +1,54 @@
+ftrt-cambrian-correlation/
+├── backend/
+│   ├── app/
+│   │   ├── __init__.py
+│   │   ├── api/
+│   │   │   ├── __init__.py
+│   │   │   ├── cosmic_events.py
+│   │   │   ├── evolutionary_events.py
+│   │   │   └── correlations.py
+│   │   ├── core/
+│   │   │   ├── __init__.py
+│   │   │   ├── cosmic_evolution_correlator.py
+│   │   │   ├── data_sources.py
+│   │   │   └── statistical_analyzer.py
+│   │   ├── models/
+│   │   │   ├── __init__.py
+│   │   │   ├── cosmic_events.py
+│   │   │   ├── evolutionary_events.py
+│   │   │   └── correlations.py
+│   │   └── utils/
+│   │       ├── __init__.py
+│   │       ├── data_processing.py
+│   │       └── visualization.py
+│   ├── migrations/
+│   ├── tests/
+│   ├── requirements.txt
+│   └── run.py
+├── frontend/
+│   ├── public/
+│   ├── src/
+│   │   ├── components/
+│   │   │   ├── Dashboard.js
+│   │   │   ├── CorrelationChart.js
+│   │   │   ├── Timeline.js
+│   │   │   └── DataExplorer.js
+│   │   ├── services/
+│   │   │   └── api.js
+│   │   ├── App.js
+│   │   └── index.js
+│   ├── package.json
+│   └── package-lock.json
+├── data/
+│   ├── cosmic/
+│   ├── evolutionary/
+│   └── processed/
+├── scripts/
+│   ├── data_collection/
+│   ├── data_processing/
+│   └── analysis/
+├── docs/
+├── docker-compose.yml
+├── Dockerfile.backend
+├── Dockerfile.frontend
+└── README.md
